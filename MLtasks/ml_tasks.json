@@ -839,6 +839,66 @@
             "requirements": {
                 "validation": "AUC/AP reported with deterministic sampling."
             }
+        },
+        {
+            "series": "Ensemble",
+            "level": 1,
+            "id": "ens_lvl1_bagging",
+            "algorithm": "Bagging (Bootstrap Aggregating)",
+            "description": "Train multiple independent PyTorch MLP models on bootstrap samples of the training data and average their predictions for regression.",
+            "interface_protocol": "pytorch_task_v1",
+            "requirements": {
+                "math": "Ensemble prediction: mean(h_k(x)) over k base learners trained on bootstrap samples.",
+                "data": "Synthetic regression: sklearn make_regression with 10 features, noise=10.",
+                "implementation": "Train 5 MLP base learners each on a different bootstrap sample (sample with replacement). Average predictions at inference.",
+                "evaluation": "MSE and R2 on validation set using ensemble predictions.",
+                "main_block": "Assert val R2 > 0.80 and val MSE < 0.5. Exit 0 on success.",
+                "output": "Return dict with train/val MSE, R2."
+            }
+        },
+        {
+            "series": "Anomaly Detection",
+            "level": 3,
+            "id": "anom_lvl3_lof",
+            "algorithm": "Autoencoder Anomaly Detection (LOF-style density scoring)",
+            "description": "Train a PyTorch autoencoder only on normal data. Detect anomalies using reconstruction error as the outlier score, inspired by the Local Outlier Factor density principle.",
+            "interface_protocol": "pytorch_task_v1",
+            "requirements": {
+                "math": "Anomaly score = reconstruction error = ||x - decoder(encoder(x))||^2. High score = likely anomaly.",
+                "data": "Synthetic 2D data: 400 normal points from 2 Gaussian clusters, 40 anomalies uniformly scattered far from clusters.",
+                "implementation": "Autoencoder trained only on normal class. Threshold set at 95th percentile of scores.",
+                "metrics": "AUC-ROC, Precision, Recall, F1 on mixed validation set.",
+                "validation": "Assert AUC-ROC > 0.75 and Recall > 0.50."
+            }
+        },
+        {
+            "series": "GAN",
+            "level": 3,
+            "id": "gan_lvl3_cgan",
+            "algorithm": "Conditional GAN (cGAN)",
+            "description": "Train a conditional GAN where both generator and discriminator are conditioned on class labels, enabling class-specific generation on synthetic 2D multiclass data.",
+            "interface_protocol": "pytorch_task_v1",
+            "requirements": {
+                "math": "G(z, c) -> x_fake. D(x, c) -> real/fake. Label embeddings concatenated with input for both G and D.",
+                "data": "Synthetic 2D 3-class blobs normalized to [-1, 1].",
+                "implementation": "Generator and Discriminator each use nn.Embedding for class conditioning. Adam optimizer with beta1=0.5.",
+                "evaluation": "Discriminator accuracy on real and fake samples; generator output range check.",
+                "validation": "Assert D accuracy on real > 0.55 and generator loss < 2.5."
+            }
+        },
+        {
+            "series": "MLP",
+            "level": 5,
+            "id": "mlp_lvl5_fashionmnist",
+            "algorithm": "MLP with BatchNorm + Dropout on FashionMNIST",
+            "description": "Train a deep fully-connected MLP on the real FashionMNIST dataset using batch normalization, dropout regularization, and learning rate scheduling with StepLR.",
+            "interface_protocol": "pytorch_task_v1",
+            "requirements": {
+                "data": "FashionMNIST (torchvision): 60k train / 10k test, 28x28 grayscale images, 10 clothing classes. Normalize with mean=0.2860, std=0.3530.",
+                "implementation": "3 hidden layers (512, 256, 128) with BatchNorm1d + ReLU + Dropout. CrossEntropyLoss. Adam with weight_decay=1e-4. StepLR scheduler.",
+                "evaluation": "Loss and accuracy on train and validation splits.",
+                "validation": "Assert val accuracy > 0.85 and val loss < 0.50. Exit 0 on success."
+            }
         }
     ]
 }
